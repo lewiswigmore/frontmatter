@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+  --color-paper: #F9F9F5;
+  --color-ink: #1a1a1a;
+}
+
+/* Base typography */
+body {
+  font-family: var(--font-mono), monospace;
+}
+
+/* Remove default focus rings, add subtle border on focus */
+*:focus {
+  outline: none;
+}
+
+/* Scrollbar styling for the paper aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F9F9F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border: 1px solid #a8a29e;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a29e;
+}
+
+/* Prose customizations for GitHub-like rendering */
+.prose img {
+  display: inline-block;
+  margin: 0.25rem 0.125rem;
+}
+
+.prose p img {
+  display: inline;
+}
+
+/* Code block styling */
+.prose pre {
+  background-color: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+}
+
+.prose code {
+  background-color: rgba(175, 184, 193, 0.2);
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+  font-size: 85%;
+}
+
+.prose pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
