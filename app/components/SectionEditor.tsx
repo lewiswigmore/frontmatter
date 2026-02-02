@@ -3,7 +3,7 @@
 import { Section, ReadmeComponent } from "../types";
 import { getComponentById } from "../data/components";
 import { Trash2, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, DragEvent } from "react";
 import SkillIconsPicker from "./SkillIconsPicker";
 import SocialBadgesPicker, { SocialBadge, generateSocialBadgesMarkdown } from "./SocialBadgesPicker";
 
@@ -17,6 +17,40 @@ interface SectionEditorProps {
   onMoveDown: () => void;
   isFirst: boolean;
   isLast: boolean;
+  onDragStart: (index: number) => void;
+  onDragEnd: () => void;
+  isDragging: boolean;
+}
+
+// Drop zone component for between sections
+interface DropZoneProps {
+  index: number;
+  isActive: boolean;
+  onDragOver: (e: DragEvent<HTMLDivElement>) => void;
+  onDragLeave: () => void;
+  onDrop: (e: DragEvent<HTMLDivElement>) => void;
+}
+
+export function DropZone({ index, isActive, onDragOver, onDragLeave, onDrop }: DropZoneProps) {
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className="relative z-10 h-2 -my-1"
+    >
+      {/* Large invisible hit area */}
+      <div className="absolute inset-x-0 -top-3 -bottom-3" />
+      {/* Visual indicator - only shows when active */}
+      <div
+        className={`absolute inset-x-2 top-1/2 -translate-y-1/2 rounded ${
+          isActive
+            ? "bg-orange-100 border-2 border-dashed border-orange-400 h-4"
+            : "h-0.5 bg-transparent"
+        }`}
+      />
+    </div>
+  );
 }
 
 // Helper to determine if a field is a hex color field
@@ -46,6 +80,9 @@ export default function SectionEditor({
   onMoveDown,
   isFirst,
   isLast,
+  onDragStart,
+  onDragEnd,
+  isDragging,
 }: SectionEditorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const component = getComponentById(section.componentId);
@@ -83,13 +120,25 @@ export default function SectionEditor({
   };
 
   return (
-    <div className="border border-stone-200 bg-white group">
+    <div
+      draggable
+      onDragStart={() => onDragStart(index)}
+      onDragEnd={onDragEnd}
+      className={`border bg-white group ${
+        isDragging
+          ? "opacity-50 border-dashed border-stone-400 scale-[0.98]"
+          : "border-stone-200 transition-colors duration-200"
+      }`}
+    >
       {/* Header */}
       <div
         className="flex items-center gap-2 px-3 py-2 bg-stone-50 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <GripVertical className="w-4 h-4 text-stone-300" />
+        <GripVertical 
+          className="w-4 h-4 text-stone-400 cursor-grab active:cursor-grabbing hover:text-stone-600 transition-colors" 
+          onMouseDown={(e) => e.stopPropagation()}
+        />
         <span className="font-mono text-xs text-stone-400 w-6">{index + 1}</span>
         <span className="font-mono text-sm text-stone-700 flex-1">
           {component.name}
