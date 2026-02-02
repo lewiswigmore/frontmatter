@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, DragEvent } from "react";
 import { Copy, Check, Plus, Layout, Eye, Code, BookOpen, Heart, MessageSquarePlus } from "lucide-react";
 import Preview from "../components/Preview";
 import RawMarkdownView, { generateMarkdownFromSections } from "../components/RawMarkdownView";
 import ComponentPicker from "../components/ComponentPicker";
 import ArchetypePicker from "../components/ArchetypePicker";
-import SectionEditor from "../components/SectionEditor";
+import SectionEditor, { DropZone } from "../components/SectionEditor";
 import GlobalSettings from "../components/GlobalSettings";
 import KofiModal from "../components/KofiModal";
 import { archetypes } from "../data/archetypes";
@@ -24,6 +24,10 @@ export default function Home() {
   const [showArchetypePicker, setShowArchetypePicker] = useState(false);
   const [showKofiModal, setShowKofiModal] = useState(false);
   const [viewMode, setViewMode] = useState<"preview" | "raw">("preview");
+  
+  // Drag and drop state
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
   const handleCopy = async () => {
     const markdown = generateMarkdownFromSections(sections, globalValues);
@@ -73,6 +77,63 @@ export default function Home() {
         newSections[newIndex],
         newSections[index],
       ];
+      return newSections;
+    });
+  }, []);
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((index: number) => {
+    setDraggedIndex(index);
+  }, []);
+
+  const handleDropZoneDragOver = useCallback((e: DragEvent<HTMLDivElement>, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    setDropTargetIndex(targetIndex);
+  }, [draggedIndex]);
+
+  const handleDropZoneDragLeave = useCallback(() => {
+    setDropTargetIndex(null);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null);
+    setDropTargetIndex(null);
+  }, []);
+
+
+
+  const handleDropZoneDrop = useCallback((e: DragEvent<HTMLDivElement>, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null) {
+      handleDragEnd();
+      return;
+    }
+
+    // Calculate the actual insert position
+    let insertIndex = targetIndex;
+    if (draggedIndex < targetIndex) {
+      insertIndex = targetIndex - 1;
+    }
+
+    if (draggedIndex !== insertIndex) {
+      setSections((prev) => {
+        const newSections = [...prev];
+        const [draggedSection] = newSections.splice(draggedIndex, 1);
+        newSections.splice(insertIndex, 0, draggedSection);
+        return newSections;
+      });
+    }
+
+    handleDragEnd();
+  }, [draggedIndex, handleDragEnd]);
+
+  // Reorder sections handler for Preview component
+  const handleReorderSections = useCallback((fromIndex: number, toIndex: number) => {
+    setSections((prev) => {
+      const newSections = [...prev];
+      const [movedSection] = newSections.splice(fromIndex, 1);
+      newSections.splice(toIndex, 0, movedSection);
       return newSections;
     });
   }, []);
@@ -151,23 +212,51 @@ export default function Home() {
             <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-3">
               <GlobalSettings values={globalValues} onChange={setGlobalValues} />
 
-              <div className="space-y-2">
-                <div className="font-mono text-xs text-stone-500 uppercase tracking-widest px-1">
+              <div className="space-y-0">
+                <div className="font-mono text-xs text-stone-500 uppercase tracking-widest px-1 mb-2">
                   Sections ({sections.length})
                 </div>
-                {sections.map((section, index) => (
-                  <SectionEditor
-                    key={section.id}
-                    section={section}
-                    index={index}
-                    globalValues={globalValues}
-                    onUpdate={(s) => handleUpdateSection(index, s)}
-                    onDelete={() => handleDeleteSection(index)}
-                    onMoveUp={() => handleMoveSection(index, "up")}
-                    onMoveDown={() => handleMoveSection(index, "down")}
-                    isFirst={index === 0}
-                    isLast={index === sections.length - 1}
+                {/* Initial drop zone */}
+                {sections.length > 0 && draggedIndex !== null && (
+                  <DropZone
+                    index={0}
+                    isActive={dropTargetIndex === 0 && draggedIndex !== 0}
+                    onDragOver={(e) => handleDropZoneDragOver(e, 0)}
+                    onDragLeave={handleDropZoneDragLeave}
+                    onDrop={(e) => handleDropZoneDrop(e, 0)}
                   />
+                )}
+                {sections.map((section, index) => (
+                  <div key={section.id}>
+                    <SectionEditor
+                      section={section}
+                      index={index}
+                      globalValues={globalValues}
+                      onUpdate={(s) => handleUpdateSection(index, s)}
+                      onDelete={() => handleDeleteSection(index)}
+                      onMoveUp={() => handleMoveSection(index, "up")}
+                      onMoveDown={() => handleMoveSection(index, "down")}
+                      isFirst={index === 0}
+                      isLast={index === sections.length - 1}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      isDragging={draggedIndex === index}
+                    />
+                    {/* Drop zone after each section */}
+                    {draggedIndex !== null && (
+                      <DropZone
+                        index={index + 1}
+                        isActive={dropTargetIndex === index + 1 && draggedIndex !== index && draggedIndex !== index + 1}
+                        onDragOver={(e) => handleDropZoneDragOver(e, index + 1)}
+                        onDragLeave={handleDropZoneDragLeave}
+                        onDrop={(e) => handleDropZoneDrop(e, index + 1)}
+                      />
+                    )}
+                    {/* Spacing when not dragging */}
+                    {draggedIndex === null && index < sections.length - 1 && (
+                      <div className="h-2" />
+                    )}
+                  </div>
                 ))}
                 {sections.length === 0 && (
                   <div className="text-center py-6 sm:py-8 border border-dashed border-stone-300">
@@ -229,7 +318,12 @@ export default function Home() {
 
             <div className="flex-1 min-h-0 overflow-hidden">
               {viewMode === "preview" ? (
-                <Preview sections={sections} globalValues={globalValues} />
+                <Preview 
+                  sections={sections} 
+                  globalValues={globalValues}
+                  onReorderSections={handleReorderSections}
+                  onDeleteSection={handleDeleteSection}
+                />
               ) : (
                 <RawMarkdownView sections={sections} globalValues={globalValues} />
               )}
