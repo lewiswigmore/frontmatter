@@ -247,6 +247,13 @@ export const archetypes: Archetype[] = [
           theme: "dark",
         },
       },
+      {
+        id: "s10",
+        componentId: "extras-snake",
+        values: {
+          username: "lewiswigmore",
+        },
+      },
     ],
   },
   {

@@ -339,7 +339,7 @@ export const components: ReadmeComponent[] = [
     ],
     template: `### 🐍 Contribution Graph
 
-![Snake animation](https://github.com/{{username}}/{{username}}/blob/output/github-contribution-grid-snake.svg)
+![Snake animation](https://raw.githubusercontent.com/{{username}}/{{username}}/output/github-contribution-grid-snake.svg)
 
 > *Requires [snk](https://github.com/Platane/snk) GitHub Action setup*`,
   },
