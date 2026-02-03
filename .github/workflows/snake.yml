@@ -8,13 +8,16 @@ on:
   # Allows to manually run the job at any time
   workflow_dispatch:
   
-  # Run on every push on the master branch
+  # Run on every push on the master or main branch
   push:
     branches:
     - master
+    - main
     
 jobs:
   generate:
+    permissions: 
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     

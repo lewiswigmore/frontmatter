@@ -336,10 +336,11 @@ export const components: ReadmeComponent[] = [
     description: "Animated snake eating your contributions",
     fields: [
       { name: "username", label: "GitHub Username", type: "text", default: "{{username}}", placeholder: "username" },
+      { name: "repo", label: "Repository", type: "text", default: "{{username}}", placeholder: "defaults to username" },
     ],
     template: `### 🐍 Contribution Graph
 
-![Snake animation](https://raw.githubusercontent.com/{{username}}/{{username}}/output/github-contribution-grid-snake.svg)
+![Snake animation](https://raw.githubusercontent.com/{{username}}/{{repo}}/output/github-contribution-grid-snake.svg)
 
 > *Requires [snk](https://github.com/Platane/snk) GitHub Action setup*`,
   },

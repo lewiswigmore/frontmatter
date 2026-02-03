@@ -183,6 +183,14 @@ export const archetypes: Archetype[] = [
         },
       },
       {
+        id: "snake",
+        componentId: "extras-snake",
+        values: {
+          username: "Platane",
+          repo: "snk",
+        },
+      },
+      {
         id: "s3",
         componentId: "about-bullets",
         values: {
@@ -245,13 +253,6 @@ export const archetypes: Archetype[] = [
           icons: "js,ts,react,nextjs,nodejs,python,docker,kubernetes,aws,git",
           perline: "10",
           theme: "dark",
-        },
-      },
-      {
-        id: "s10",
-        componentId: "extras-snake",
-        values: {
-          username: "lewiswigmore",
         },
       },
     ],
