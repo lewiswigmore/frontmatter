@@ -139,6 +139,14 @@ export default function LandingPage() {
                 View Source
               </a>
             </div>
+
+            <div className="mt-12 flex justify-center">
+              <img 
+                src="https://raw.githubusercontent.com/Platane/snk/output/github-contribution-grid-snake.svg" 
+                alt="Snake contribution graph animation"
+                className="max-w-full opacity-80 hover:opacity-100 transition-opacity"
+              />
+            </div>
           </div>
         </section>
 
