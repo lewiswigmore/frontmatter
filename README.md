@@ -72,13 +72,11 @@ Open [localhost:3000](http://localhost:3000) to see the app.
 
 ### Tech Stack
 
-| | |
-|---|---|
-| Next.js 15 | App Router, Static Export |
-| Tailwind CSS | Utility-first styling |
-| TypeScript | Type safety throughout |
-| react-markdown | Markdown rendering |
-| rehype-sanitize | XSS protection |
+- **Next.js 15** — App Router, Static Export
+- **Tailwind CSS** — Utility-first styling
+- **TypeScript** — Type safety throughout
+- **react-markdown** — Markdown rendering
+- **rehype-sanitize** — XSS protection
 
 ### Ideas for contributions
 
