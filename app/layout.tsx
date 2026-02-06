@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -20,13 +20,19 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#ea580c",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: {
     default: "frontmatter.cc - Free GitHub README Generator & Profile Builder",
     template: "%s | frontmatter.cc",
   },
   description:
-    "Create stunning GitHub profile READMEs in minutes. Free, open source README generator with 8 templates, 20+ components, live preview, and one-click copy. No sign-up required.",
+    "Create stunning GitHub profile READMEs in minutes. Free, open source README generator with 9 templates, 20+ components, live preview, and one-click copy. No sign-up required.",
   keywords: [
     "GitHub README generator",
     "GitHub profile README",
@@ -60,19 +66,30 @@ export const metadata: Metadata = {
   openGraph: {
     title: "frontmatter.cc — Free GitHub README Generator",
     description:
-      "Create stunning GitHub profile READMEs in minutes. Free, open source with 8 templates, 20+ components, and live preview.",
+      "Create stunning GitHub profile READMEs in minutes. Free, open source with 9 templates, 20+ components, and live preview.",
     url: "https://frontmatter.cc",
     siteName: "frontmatter.cc",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "frontmatter.cc — Free GitHub README Generator",
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "frontmatter.cc — Free GitHub README Generator",
     description:
-      "Create stunning GitHub profile READMEs in minutes. Free, open source with 8 templates, 20+ components, and live preview.",
+      "Create stunning GitHub profile READMEs in minutes. Free, open source with 9 templates, 20+ components, and live preview.",
     creator: "@lewiswigmore",
+    images: ["/og-image.png"],
   },
+  category: "developer-tools",
   robots: {
     index: true,
     follow: true,
