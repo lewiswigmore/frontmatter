@@ -42,3 +42,4 @@ next-env.d.ts
 
 # VS Code Copilot agents (local only)
 .github/agents/
+.agents/
