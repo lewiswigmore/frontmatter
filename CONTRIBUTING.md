@@ -32,7 +32,7 @@ Thank you for your interest in contributing! This project welcomes contributions
 
 ### Adding Components or Archetypes
 
-New README components and archetypes are always welcome! Please:
+New building blocks and agent archetypes are always welcome! Please:
 
 - Follow the existing code style
 - Add TypeScript types where applicable

@@ -2,11 +2,11 @@
 
 # frontmatter<span>.cc</span>
 
-**Make your README matter.**
+**Build AI Agents that matter.**
 
-A free, open source design studio for GitHub profile READMEs.
+A free, open source studio for crafting AI Agent Skills, MCP Server Configs, and System Prompts.
 
-[![Live Site](https://img.shields.io/badge/🌐_Live_Site-frontmatter.cc-ea580c?style=flat-square)](https://frontmatter.cc)
+[![Live Site](https://img.shields.io/badge/Live_Site-frontmatter.cc-ea580c?style=flat-square)](https://frontmatter.cc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![GitHub Actions](https://img.shields.io/github/actions/workflow/status/lewiswigmore/frontmatter/deploy.yml?style=flat-square&label=Deploy)](https://github.com/lewiswigmore/frontmatter/actions)
 
@@ -20,36 +20,36 @@ A free, open source design studio for GitHub profile READMEs.
 
 ---
 
-## ✨ What is frontmatter?
+## What is frontmatter?
 
-frontmatter.cc is a visual builder for creating GitHub profile READMEs. Pick a template that matches your vibe, customize the components, preview in real-time, and copy the markdown. No sign-up, no paywall, no nonsense.
+frontmatter.cc is a visual builder for AI agent configuration files. Pick an archetype, customize the building blocks, preview in real-time, and copy the output. No sign-up, no paywall, no nonsense.
 
 ```
-Pick archetype → Customize components → Copy markdown → Done ✓
+Pick archetype → Customize blocks → Copy config → Done ✓
 ```
 
 <br />
 
-## 🧩 Components
+## Building Blocks
 
-Mix and match 20+ components:
+Mix and match components across 6 categories:
 
-- **Headers** — Waving text, typing animations, ASCII art, banners
-- **Stats** — GitHub stats, streak counters, language charts, trophies
-- **Tech** — Skill icons, tech tables, badge grids
-- **Social** — Twitter, LinkedIn, email, website links
-- **Projects** — Pinned repos, project tables
-- **Extras** — Quotes, support buttons, separators, footers
+- **Frontmatter** — YAML metadata for skills and prompt files
+- **Instructions** — Markdown instructions, role definitions, rules
+- **Tools & Schemas** — JSON tool definitions, parameter schemas
+- **Few-Shot Examples** — Dialogue pairs and expected behaviors
+- **MCP Configs** — Server blocks, transport settings, environment vars
+- **Extras** — Separators, boilerplate, and utilities
 
 <br />
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Here's how to help:
 
-- [🐛 Report a Bug](https://github.com/lewiswigmore/frontmatter/issues/new?template=bug_report.md)
-- [✨ Request a Feature](https://github.com/lewiswigmore/frontmatter/issues/new?template=feature_request.md)
-- [📖 Read Contributing Guide](CONTRIBUTING.md)
+- [Report a Bug](https://github.com/lewiswigmore/frontmatter/issues/new?template=bug_report.md)
+- [Request a Feature](https://github.com/lewiswigmore/frontmatter/issues/new?template=feature_request.md)
+- [Read Contributing Guide](CONTRIBUTING.md)
 
 ### Development Setup
 
@@ -80,20 +80,20 @@ Open [localhost:3000](http://localhost:3000) to see the app.
 
 ### Ideas for contributions
 
-- New archetypes or components
+- New archetypes or building blocks
 - Accessibility improvements
 - Performance optimizations
 - Documentation
 
 <br />
 
-## 🔒 Security
+## Security
 
 Security is taken seriously. See [SECURITY.md](SECURITY.md) for our security policy.
 
 <br />
 
-## 📄 License
+## License
 
 [MIT](LICENSE) © [Lewis Wigmore](https://github.com/lewiswigmore)
 
@@ -105,6 +105,6 @@ Security is taken seriously. See [SECURITY.md](SECURITY.md) for our security pol
 
 **[frontmatter.cc](https://frontmatter.cc)**
 
-By [@lewiswigmore](https://github.com/lewiswigmore) · [Buy me a coffee](https://ko-fi.com/lewiswigmore) ☕
+By [@lewiswigmore](https://github.com/lewiswigmore) · [Buy me a coffee](https://ko-fi.com/lewiswigmore)
 
 </div>

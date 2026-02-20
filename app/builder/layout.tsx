@@ -3,20 +3,20 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Builder",
   description:
-    "Build your perfect GitHub profile README with a drag-and-drop editor. Choose from 9 archetypes, 20+ components, and preview in real-time. Free, no sign-up required.",
+    "Choose an archetype to start building AI Agent Skills, MCP Server Configs, and System Prompts. Pick a template or start from scratch. Free, no sign-up required.",
   alternates: {
     canonical: "/builder",
   },
   openGraph: {
-    title: "README Builder — frontmatter.cc",
+    title: "AI Agent Studio — frontmatter.cc",
     description:
-      "Build your perfect GitHub profile README with a drag-and-drop editor. 9 archetypes, 20+ components, real-time preview.",
+      "Choose an archetype and template to build AI Agent Skills, MCP Configs, and System Prompts with a visual editor.",
     url: "https://frontmatter.cc/builder",
   },
   twitter: {
-    title: "README Builder — frontmatter.cc",
+    title: "AI Agent Studio — frontmatter.cc",
     description:
-      "Build your perfect GitHub profile README with a drag-and-drop editor. 9 archetypes, 20+ components, real-time preview.",
+      "Choose an archetype and template to build AI Agent Skills, MCP Configs, and System Prompts with a visual editor.",
   },
 };
 

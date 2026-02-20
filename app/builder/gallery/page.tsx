@@ -1,160 +1,414 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Heart } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, Heart, Search, X } from "lucide-react";
+
+function HighlightMatch({ text, query }: { text: string; query: string }) {
+  if (!query) return <>{text}</>;
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let idx = lowerText.indexOf(lowerQuery);
+  while (idx !== -1) {
+    if (idx > lastIndex) parts.push(text.slice(lastIndex, idx));
+    parts.push(
+      <mark key={idx} className="bg-orange-100 text-inherit">
+        {text.slice(idx, idx + query.length)}
+      </mark>
+    );
+    lastIndex = idx + query.length;
+    idx = lowerText.indexOf(lowerQuery, lastIndex);
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts.length > 0 ? <>{parts}</> : <>{text}</>;
+}
 import { archetypes } from "../../data/archetypes";
-import { components, componentCategories } from "../../data/components";
+import { components, componentCategories, getComponentById } from "../../data/components";
+import { templates, templateCategories } from "../../data/templates";
+import { IconFromName } from "../../components/IconMap";
 
-type TabType = "archetypes" | "components" | "integrations";
+type TabType = "templates" | "archetypes" | "components" | "resources";
 
-const integrations = [
+const resources = [
   {
-    name: "GitHub Readme Stats",
-    description: "Dynamically generated stats for your GitHub readmes",
-    url: "https://github.com/anuraghazra/github-readme-stats",
-    features: ["Stats Card", "Top Languages", "Repo Cards", "Wakatime Stats"],
+    name: "Model Context Protocol",
+    description: "The open standard for connecting AI assistants to external tools and data",
+    url: "https://modelcontextprotocol.io",
+    features: ["Open Standard", "Tool Integration", "Multiple Transports"],
   },
   {
-    name: "GitHub Readme Streak Stats",
-    description: "Display your contribution streak",
-    url: "https://github.com/DenverCoder1/github-readme-streak-stats",
-    features: ["Current Streak", "Longest Streak", "Total Contributions"],
+    name: "VS Code Agent Mode",
+    description: "Build custom AI agents and skills for VS Code Copilot",
+    url: "https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode",
+    features: ["Custom Skills", "Prompt Files", "Agent Instructions"],
   },
   {
-    name: "GitHub Profile Trophy",
-    description: "Add dynamically generated GitHub Trophy to your readme",
-    url: "https://github.com/ryo-ma/github-profile-trophy",
-    features: ["Multiple Trophies", "Ranks", "Themes"],
+    name: "MCP Servers Registry",
+    description: "Community-maintained list of MCP server implementations",
+    url: "https://github.com/modelcontextprotocol/servers",
+    features: ["Reference Servers", "Community Servers", "SDK Examples"],
   },
   {
-    name: "Skill Icons",
-    description: "Showcase your skills with beautiful icons",
-    url: "https://github.com/tandpfun/skill-icons",
-    features: ["100+ Icons", "Dark/Light Themes", "Grid Layout"],
+    name: "Anthropic Prompt Engineering",
+    description: "Guide to writing effective system prompts and instructions",
+    url: "https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering",
+    features: ["Best Practices", "Techniques", "Examples"],
   },
   {
-    name: "Readme Typing SVG",
-    description: "Dynamically generated typing effect",
-    url: "https://github.com/DenverCoder1/readme-typing-svg",
-    features: ["Custom Text", "Adjustable Speed", "Multiple Lines"],
-  },
-  {
-    name: "GitHub Activity Graph",
-    description: "A dynamically generated activity graph",
-    url: "https://github.com/Ashutosh00710/github-readme-activity-graph",
-    features: ["Contribution Graph", "Multiple Themes", "Customizable"],
-  },
-  {
-    name: "Shields.io",
-    description: "Quality metadata badges for open source projects",
-    url: "https://shields.io",
-    features: ["Any Badge", "Custom Colors", "Dynamic Data"],
-  },
-  {
-    name: "Capsule Render",
-    description: "Dynamic header and footer images",
-    url: "https://github.com/kyechan99/capsule-render",
-    features: ["Waving", "Gradient", "Animation"],
+    name: "OpenAI Prompt Guide",
+    description: "Strategies for getting better results from language models",
+    url: "https://platform.openai.com/docs/guides/prompt-engineering",
+    features: ["Tactics", "Examples", "Safety"],
   },
 ];
 
-export default function GalleryPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("archetypes");
-  const [activeCategory, setActiveCategory] = useState<string>("all");
+const tabs: TabType[] = ["templates", "archetypes", "components", "resources"];
 
-  const filteredComponents =
-    activeCategory === "all"
-      ? components
-      : components.filter((c) => c.category === activeCategory);
+export default function GalleryPage() {
+  const [activeTab, setActiveTab] = useState<TabType>("templates");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [activeTemplateCategory, setActiveTemplateCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTyping(e)) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+      const num = parseInt(e.key);
+      if (num >= 1 && num <= 4) {
+        setActiveTab(tabs[num - 1]);
+      }
+    };
+    const isTyping = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable;
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setSearchQuery("");
+      searchInputRef.current?.blur();
+    }
+  }, []);
+
+  const matchesSearch = (text: string) =>
+    text.toLowerCase().includes(searchQuery.toLowerCase());
+
+  const filteredTemplates = templates.filter((t) => {
+    const categoryMatch = activeTemplateCategory === "all" || t.category === activeTemplateCategory;
+    if (!categoryMatch) return false;
+    if (!searchQuery) return true;
+    return matchesSearch(t.name) || matchesSearch(t.description) || t.tags.some(matchesSearch);
+  });
+
+  const filteredComponents = components.filter((c) => {
+    const categoryMatch = activeCategory === "all" || c.category === activeCategory;
+    if (!categoryMatch) return false;
+    if (!searchQuery) return true;
+    return matchesSearch(c.name) || matchesSearch(c.description);
+  });
+
+  const filteredArchetypes = archetypes.filter((a) => {
+    if (!searchQuery) return true;
+    return matchesSearch(a.name) || matchesSearch(a.description) || matchesSearch(a.tagline) || matchesSearch(a.persona);
+  });
+
+  const filteredResources = resources.filter((r) => {
+    if (!searchQuery) return true;
+    return matchesSearch(r.name) || matchesSearch(r.description) || r.features.some(matchesSearch);
+  });
+
+  const resultCounts = useMemo(() => {
+    if (!searchQuery) return null;
+    const q = searchQuery.toLowerCase();
+    const m = (t: string) => t.toLowerCase().includes(q);
+    return {
+      templates: templates.filter((t) => m(t.name) || m(t.description) || t.tags.some(m)).length,
+      archetypes: archetypes.filter((a) => m(a.name) || m(a.description) || m(a.tagline) || m(a.persona)).length,
+      components: components.filter((c) => m(c.name) || m(c.description)).length,
+      resources: resources.filter((r) => m(r.name) || m(r.description) || r.features.some(m)).length,
+    };
+  }, [searchQuery]);
+
+  const activeResultCount = resultCounts
+    ? resultCounts[activeTab]
+    : { templates: templates.length, archetypes: archetypes.length, components: components.length, resources: resources.length }[activeTab];
+
+  const handleTagClick = useCallback((tag: string) => {
+    setSearchQuery(tag);
+    searchInputRef.current?.focus();
+  }, []);
+
+  const handleClearAll = useCallback(() => {
+    setSearchQuery("");
+    setActiveTemplateCategory("all");
+    setActiveCategory("all");
+  }, []);
 
   return (
     <div className="min-h-screen bg-paper">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col">
-      <header className="border-b border-stone-200 bg-paper sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-        <div className="py-3">
+      <div className="sticky top-0 z-40">
+      <header className="border-b border-stone-200 bg-paper -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+        <div className="py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
                 href="/builder"
+                title="Back to builder"
                 className="flex items-center gap-2 text-stone-500 hover:text-stone-700 transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="font-mono text-sm">Back to Builder</span>
+                <ArrowLeft aria-hidden="true" className="w-4 h-4" />
+                <span className="font-mono text-sm hidden sm:inline">Builder</span>
               </Link>
-              <div className="w-px h-6 bg-stone-200" />
-              <h1 className="font-serif text-xl text-stone-900">Gallery</h1>
+              <div className="w-px h-5 bg-stone-200" aria-hidden="true" />
+              <h1 className="font-serif text-lg text-stone-900">Gallery</h1>
+            </div>
+            <div className="flex gap-0">
+              {tabs.map(
+                (tab, index) => (
+                  <button
+                    key={tab}
+                    onClick={() => {
+                      setActiveTab(tab);
+                      mainRef.current?.scrollTo({ top: 0 });
+                    }}
+                    className={`
+                    px-3 py-2
+                    font-mono text-xs capitalize
+                    border-b-2 -mb-px
+                    transition-colors
+                    ${
+                      activeTab === tab
+                        ? "border-stone-900 text-stone-900"
+                        : "border-transparent text-stone-400 hover:text-stone-600"
+                    }
+                  `}
+                  >
+                    {tab}
+                    {resultCounts ? (
+                      <span className={`ml-1 font-mono text-[10px] ${
+                        resultCounts[tab] === 0 ? "text-stone-300" : activeTab === tab ? "text-stone-500" : "text-stone-300"
+                      }`}>
+                        {resultCounts[tab]}
+                      </span>
+                    ) : (
+                      <span className="hidden sm:inline ml-1 font-mono text-[10px] text-stone-300">{index + 1}</span>
+                    )}
+                  </button>
+                )
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      <div className="border-b border-stone-200 bg-stone-50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-        <div>
-          <div className="flex gap-0">
-            {(["archetypes", "components", "integrations"] as TabType[]).map(
-              (tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`
-                  px-4 py-3
-                  font-mono text-sm capitalize
-                  border-b-2 -mb-px
-                  transition-colors
-                  ${
-                    activeTab === tab
-                      ? "border-stone-900 text-stone-900"
-                      : "border-transparent text-stone-500 hover:text-stone-700"
-                  }
-                `}
-                >
-                  {tab}
-                </button>
-              )
-            )}
-          </div>
+      <div className="border-b border-stone-200 bg-paper -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+        <div className="py-3 flex items-center gap-3">
+          <Search aria-hidden="true" className="w-4 h-4 text-stone-400 shrink-0" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder={`Search ${activeTab}…  (press /)`}
+            aria-label={`Search ${activeTab}`}
+            className="flex-1 bg-transparent font-mono text-sm text-stone-900 placeholder:text-stone-300 outline-none"
+          />
+          {searchQuery ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="font-mono text-xs text-stone-400">
+                {activeResultCount} result{activeResultCount !== 1 ? "s" : ""}
+              </span>
+              <button
+                onClick={() => setSearchQuery("")}
+                title="Clear search"
+                aria-label="Clear search"
+                className="text-stone-400 hover:text-stone-600"
+              >
+                <X aria-hidden="true" className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <kbd className="hidden sm:inline-block font-mono text-[10px] text-stone-400 border border-stone-200 px-1.5 py-0.5 leading-none" aria-hidden="true">/</kbd>
+          )}
         </div>
       </div>
+      </div>
 
-      <main className="flex-1 border-x border-stone-200">
+      <main ref={mainRef} className="flex-1 border-x border-stone-200">
       <div className="p-4 sm:p-6">
-        {activeTab === "archetypes" && (
+        {activeTab === "templates" && (
           <div>
-            <div className="mb-6">
-              <h2 className="font-serif text-2xl text-stone-900 mb-2">
-                Persona Archetypes
-              </h2>
-              <p className="font-mono text-sm text-stone-500">
-                Start with a template that matches who you are as a developer.
-              </p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button
+                onClick={() => setActiveTemplateCategory("all")}
+                className={`
+                  px-3 py-1.5 font-mono text-xs border transition-colors
+                  ${activeTemplateCategory === "all"
+                    ? "bg-stone-900 text-white border-stone-900"
+                    : "bg-transparent text-stone-600 border-stone-300 hover:border-stone-400"
+                  }
+                `}
+              >
+                All ({searchQuery ? templates.filter((t) => matchesSearch(t.name) || matchesSearch(t.description) || t.tags.some(matchesSearch)).length : templates.length})
+              </button>
+              {templateCategories.map((cat) => {
+                const count = templates.filter((t) => {
+                  if (t.category !== cat.id) return false;
+                  if (!searchQuery) return true;
+                  return matchesSearch(t.name) || matchesSearch(t.description) || t.tags.some(matchesSearch);
+                }).length;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveTemplateCategory(cat.id)}
+                    className={`
+                      px-3 py-1.5 font-mono text-xs border transition-colors
+                      ${activeTemplateCategory === cat.id
+                        ? "bg-stone-900 text-white border-stone-900"
+                        : "bg-transparent text-stone-600 border-stone-300 hover:border-stone-400"
+                      }
+                    `}
+                  >
+                    {cat.name} ({count})
+                  </button>
+                );
+              })}
             </div>
 
+            {(searchQuery && activeTemplateCategory !== "all") && (
+              <div className="flex items-center gap-2 mb-4 font-mono text-xs text-stone-400">
+                <span>Filtering by</span>
+                <span className="px-2 py-0.5 bg-stone-100 text-stone-600">{templateCategories.find(c => c.id === activeTemplateCategory)?.name}</span>
+                <span>+</span>
+                <span className="px-2 py-0.5 bg-orange-50 text-orange-600">&ldquo;{searchQuery}&rdquo;</span>
+                <button onClick={handleClearAll} className="text-orange-600 hover:text-orange-700 underline underline-offset-2">Clear all</button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {archetypes.map((archetype) => (
+              {filteredTemplates.length === 0 && (
+                <div className="col-span-full py-12 text-center">
+                  <p className="font-mono text-sm text-stone-400">No templates match &ldquo;{searchQuery}&rdquo;</p>
+                  {activeTemplateCategory !== "all" && (
+                    <button
+                      onClick={() => setActiveTemplateCategory("all")}
+                      className="mt-2 font-mono text-xs text-orange-600 hover:text-orange-700"
+                    >
+                      Clear category filter
+                    </button>
+                  )}
+                </div>
+              )}
+              {filteredTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="border border-stone-200 bg-white p-4 flex flex-col hover:border-stone-300 transition-colors"
+                >
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="mt-0.5 text-stone-500">
+                      <IconFromName name={template.icon} className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-serif text-base text-stone-900 leading-tight">
+                        <HighlightMatch text={template.name} query={searchQuery} />
+                      </h3>
+                      <p className="font-mono text-xs text-stone-500 mt-1 line-clamp-2">
+                        <HighlightMatch text={template.description} query={searchQuery} />
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {template.tags.map((tag) => (
+                          <button
+                            key={tag}
+                            onClick={(e) => { e.preventDefault(); handleTagClick(tag); }}
+                            className="px-1.5 py-0.5 font-mono text-[10px] text-stone-500 bg-stone-50 border border-stone-200 hover:bg-stone-100 cursor-pointer"
+                          >
+                            <HighlightMatch text={tag} query={searchQuery} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between">
+                    <span className="font-mono text-[10px] text-stone-400">
+                      {template.sections.length} section{template.sections.length !== 1 ? "s" : ""}
+                      <span className="mx-1 text-stone-300">/</span>
+                      <span className="capitalize">{template.archetypeIds[0].replace("-", " ")}</span>
+                    </span>
+                    <Link
+                      href={`/builder/${template.archetypeIds[0]}/edit?template=${template.id}`}
+                      className="inline-flex items-center gap-1.5 font-mono text-xs text-orange-600 hover:text-orange-700 transition-colors"
+                    >
+                      Use
+                      <ArrowRight aria-hidden="true" className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "archetypes" && (
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredArchetypes.length === 0 && (
+                <div className="col-span-full py-12 text-center">
+                  <p className="font-mono text-sm text-stone-400">No archetypes match &ldquo;{searchQuery}&rdquo;</p>
+                </div>
+              )}
+              {filteredArchetypes.map((archetype) => (
                 <div
                   key={archetype.id}
-                  className="border border-stone-200 bg-white p-5 hover:border-stone-400 transition-colors"
+                  className="border border-stone-200 bg-white p-4 hover:border-stone-300 transition-colors"
                 >
-                  <div className="flex items-start gap-4">
-                    <span className="text-3xl">{archetype.preview}</span>
-                    <div className="flex-1">
-                      <h3 className="font-serif text-lg text-stone-900">
-                        {archetype.name}
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 text-stone-500">
+                      <IconFromName name={archetype.preview} className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-serif text-base text-stone-900 leading-tight">
+                        <HighlightMatch text={archetype.name} query={searchQuery} />
                       </h3>
                       <p className="font-mono text-xs text-stone-500 mt-0.5">
-                        {archetype.tagline}
+                        <HighlightMatch text={archetype.tagline} query={searchQuery} />
                       </p>
-                      <p className="font-mono text-sm text-stone-600 mt-3">
-                        {archetype.description}
+                      <p className="font-mono text-xs text-stone-600 mt-2 line-clamp-2">
+                        <HighlightMatch text={archetype.description} query={searchQuery} />
                       </p>
-                      <p className="font-mono text-xs text-stone-400 mt-2 italic">
-                        {archetype.persona}
-                      </p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <span className="font-mono text-xs text-stone-400">
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {archetype.sections.map((s) => {
+                          const comp = getComponentById(s.componentId);
+                          return comp ? (
+                            <span key={s.componentId} className="font-mono text-[10px] text-stone-500 bg-stone-100 px-1.5 py-0.5">
+                              {comp.name}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="font-mono text-[10px] text-stone-400">
                           {archetype.sections.length} sections
                         </span>
+                        <Link
+                          href={`/builder/${archetype.id}`}
+                          className="font-mono text-xs text-orange-600 hover:text-orange-700 transition-colors"
+                        >
+                          Use →
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -166,17 +420,7 @@ export default function GalleryPage() {
 
         {activeTab === "components" && (
           <div>
-            <div className="mb-6">
-              <h2 className="font-serif text-2xl text-stone-900 mb-2">
-                Component Library
-              </h2>
-              <p className="font-mono text-sm text-stone-500">
-                Mix and match components to build your perfect README.
-              </p>
-            </div>
-
-            {/* Category Filter */}
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-4">
               <button
                 onClick={() => setActiveCategory("all")}
                 className={`
@@ -188,42 +432,75 @@ export default function GalleryPage() {
                   }
                 `}
               >
-                All
+                All ({searchQuery ? components.filter((c) => matchesSearch(c.name) || matchesSearch(c.description)).length : components.length})
               </button>
-              {componentCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`
-                    px-3 py-1.5 font-mono text-xs border transition-colors
-                    ${
-                      activeCategory === cat.id
-                        ? "bg-stone-900 text-white border-stone-900"
-                        : "bg-transparent text-stone-600 border-stone-300 hover:border-stone-400"
-                    }
-                  `}
-                >
-                  {cat.name}
-                </button>
-              ))}
+              {componentCategories.map((cat) => {
+                const count = components.filter((c) => {
+                  if (c.category !== cat.id) return false;
+                  if (!searchQuery) return true;
+                  return matchesSearch(c.name) || matchesSearch(c.description);
+                }).length;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`
+                      px-3 py-1.5 font-mono text-xs border transition-colors
+                      ${
+                        activeCategory === cat.id
+                          ? "bg-stone-900 text-white border-stone-900"
+                          : "bg-transparent text-stone-600 border-stone-300 hover:border-stone-400"
+                      }
+                    `}
+                  >
+                    {cat.name} ({count})
+                  </button>
+                );
+              })}
             </div>
 
+            {(searchQuery && activeCategory !== "all") && (
+              <div className="flex items-center gap-2 mb-4 font-mono text-xs text-stone-400">
+                <span>Filtering by</span>
+                <span className="px-2 py-0.5 bg-stone-100 text-stone-600">{componentCategories.find(c => c.id === activeCategory)?.name}</span>
+                <span>+</span>
+                <span className="px-2 py-0.5 bg-orange-50 text-orange-600">&ldquo;{searchQuery}&rdquo;</span>
+                <button onClick={handleClearAll} className="text-orange-600 hover:text-orange-700 underline underline-offset-2">Clear all</button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredComponents.length === 0 && (
+                <div className="col-span-full py-12 text-center">
+                  <p className="font-mono text-sm text-stone-400">No components match &ldquo;{searchQuery}&rdquo;</p>
+                  {activeCategory !== "all" && (
+                    <button
+                      onClick={() => setActiveCategory("all")}
+                      className="mt-2 font-mono text-xs text-orange-600 hover:text-orange-700"
+                    >
+                      Clear category filter
+                    </button>
+                  )}
+                </div>
+              )}
               {filteredComponents.map((component) => (
                 <div
                   key={component.id}
-                  className="border border-stone-200 bg-white p-4"
+                  className="border border-stone-200 bg-white p-4 hover:border-stone-300 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="inline-block px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-stone-500 bg-stone-100 mb-2">
+                      <button
+                        onClick={() => setActiveCategory(component.category)}
+                        className="inline-block px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-stone-500 bg-stone-100 mb-2 hover:bg-stone-200 cursor-pointer"
+                      >
                         {component.category}
-                      </span>
+                      </button>
                       <h3 className="font-mono text-sm font-medium text-stone-900">
-                        {component.name}
+                        <HighlightMatch text={component.name} query={searchQuery} />
                       </h3>
                       <p className="font-mono text-xs text-stone-500 mt-1">
-                        {component.description}
+                        <HighlightMatch text={component.description} query={searchQuery} />
                       </p>
                     </div>
                   </div>
@@ -239,43 +516,41 @@ export default function GalleryPage() {
           </div>
         )}
 
-        {activeTab === "integrations" && (
+        {activeTab === "resources" && (
           <div>
-            <div className="mb-6">
-              <h2 className="font-serif text-2xl text-stone-900 mb-2">
-                Integrations
-              </h2>
-              <p className="font-mono text-sm text-stone-500">
-                Third-party services that power your dynamic README content.
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {integrations.map((integration) => (
+              {filteredResources.length === 0 && (
+                <div className="col-span-full py-12 text-center">
+                  <p className="font-mono text-sm text-stone-400">No resources match &ldquo;{searchQuery}&rdquo;</p>
+                </div>
+              )}
+              {filteredResources.map((integration) => (
                 <a
                   key={integration.name}
                   href={integration.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title={integration.name}
                   className="border border-stone-200 bg-white p-5 hover:border-stone-400 transition-colors group"
                 >
                   <div className="flex items-start justify-between">
                     <h3 className="font-mono text-sm font-medium text-stone-900 group-hover:text-stone-700">
-                      {integration.name}
+                      <HighlightMatch text={integration.name} query={searchQuery} />
                     </h3>
-                    <ExternalLink className="w-4 h-4 text-stone-400 group-hover:text-stone-600" />
+                    <ExternalLink className="w-4 h-4 text-stone-400 group-hover:text-stone-600" aria-hidden="true" />
                   </div>
                   <p className="font-mono text-xs text-stone-500 mt-2">
-                    {integration.description}
+                    <HighlightMatch text={integration.description} query={searchQuery} />
                   </p>
                   <div className="mt-3 flex flex-wrap gap-1">
                     {integration.features.map((feature) => (
-                      <span
+                      <button
                         key={feature}
-                        className="px-2 py-0.5 font-mono text-[10px] text-stone-600 bg-stone-100"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTagClick(feature); }}
+                        className="px-2 py-0.5 font-mono text-[10px] text-stone-600 bg-stone-100 hover:bg-stone-200 cursor-pointer"
                       >
-                        {feature}
-                      </span>
+                        <HighlightMatch text={feature} query={searchQuery} />
+                      </button>
                     ))}
                   </div>
                 </a>
@@ -297,13 +572,14 @@ export default function GalleryPage() {
                 href="https://ko-fi.com/lewiswigmore"
                 target="_blank"
                 rel="noopener noreferrer"
+                title="Support on Ko-fi"
                 className="flex items-center gap-1.5 font-mono text-xs text-stone-400 hover:text-orange-600 transition-colors"
               >
-                <Heart className="w-3 h-3" />
+                <Heart aria-hidden="true" className="w-3 h-3" />
                 Support
               </a>
               <span className="font-mono text-xs text-stone-400">
-                {components.length} components · {archetypes.length} archetypes
+                {templates.length} templates · {components.length} components
               </span>
             </div>
           </div>

@@ -17,6 +17,7 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href="/"
+            title="Return to home page"
             className="
               flex items-center gap-2
               font-mono text-sm
@@ -27,11 +28,12 @@ export default function NotFound() {
               transition-colors
             "
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft aria-hidden="true" className="w-4 h-4" />
             Back to Home
           </Link>
           <Link
             href="/builder"
+            title="Open the builder"
             className="
               font-mono text-sm
               px-4 py-2
@@ -45,7 +47,7 @@ export default function NotFound() {
           </Link>
         </div>
       </div>
-      <p className="absolute bottom-4 font-mono text-xs text-stone-400">
+      <p className="absolute bottom-4 font-mono text-xs text-stone-400" aria-hidden="true">
         frontmatter<span className="text-orange-600">.cc</span>
       </p>
     </div>

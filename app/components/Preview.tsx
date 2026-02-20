@@ -2,12 +2,14 @@
 
 import { Section } from "../types";
 import { getComponentById } from "../data/components";
+import { generateMarkdownForSection, isSectionIncludedForEditor } from "./RawMarkdownView";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { useState, DragEvent } from "react";
 import { Trash2 } from "lucide-react";
+import type { ExtraProps } from "react-markdown";
 
 const customSchema = {
   ...defaultSchema,
@@ -18,11 +20,11 @@ const customSchema = {
     a: ["href", "target", "rel"],
     p: ["align"],
     div: ["align"],
-    "*": ["className", "style"],
+    "*": ["className"],
   },
   protocols: {
     ...defaultSchema.protocols,
-    src: ["http", "https", "data"],
+    src: ["http", "https"],
     href: ["http", "https", "mailto"],
   },
 };
@@ -32,6 +34,7 @@ interface PreviewProps {
   globalValues: Record<string, string>;
   onReorderSections?: (fromIndex: number, toIndex: number) => void;
   onDeleteSection?: (index: number) => void;
+  onOpenPicker?: () => void;
 }
 
 // Drop zone for preview sections
@@ -57,7 +60,7 @@ function PreviewDropZone({
       <div className="absolute inset-x-0 -top-4 -bottom-4" />
       {/* Visual indicator - only shows when active */}
       <div
-        className={`absolute inset-x-0 top-1/2 -translate-y-1/2 rounded ${
+        className={`absolute inset-x-0 top-1/2 -translate-y-1/2 ${
           isActive 
             ? "bg-orange-100 border-2 border-dashed border-orange-400 h-6" 
             : "h-0.5 bg-transparent"
@@ -67,105 +70,9 @@ function PreviewDropZone({
   );
 }
 
-export default function Preview({ sections, globalValues, onReorderSections, onDeleteSection }: PreviewProps) {
+export default function Preview({ sections, globalValues, onReorderSections, onDeleteSection, onOpenPicker }: PreviewProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
-
-  const generateMarkdownForSection = (section: Section): string => {
-    const component = getComponentById(section.componentId);
-    if (!component) return "";
-
-    let markdown = component.template;
-
-    // Replace field values
-    Object.entries(section.values).forEach(([key, value]) => {
-      // Handle special cases for social badges
-      if (component.id === "social-badges") {
-        if (key === "twitter" && value) {
-          markdown = markdown.replace(
-            "{{twitter}}",
-            `<a href="https://twitter.com/${value}"><img src="https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" /></a>\n`
-          );
-        } else if (key === "twitter") {
-          markdown = markdown.replace("{{twitter}}", "");
-        }
-        if (key === "linkedin" && value) {
-          markdown = markdown.replace(
-            "{{linkedin}}",
-            `<a href="https://linkedin.com/in/${value}"><img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" /></a>\n`
-          );
-        } else if (key === "linkedin") {
-          markdown = markdown.replace("{{linkedin}}", "");
-        }
-        if (key === "email" && value) {
-          markdown = markdown.replace(
-            "{{email}}",
-            `<a href="mailto:${value}"><img src="https://img.shields.io/badge/Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" /></a>\n`
-          );
-        } else if (key === "email") {
-          markdown = markdown.replace("{{email}}", "");
-        }
-        if (key === "website" && value) {
-          markdown = markdown.replace(
-            "{{website}}",
-            `<a href="https://${value}"><img src="https://img.shields.io/badge/Website-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white" /></a>\n`
-          );
-        } else if (key === "website") {
-          markdown = markdown.replace("{{website}}", "");
-        }
-      }
-      // Handle tech badges conversion
-      else if (component.id === "tech-badges" && key === "badges") {
-        const badgeLines = value
-          .split("\n")
-          .filter((line) => line.trim())
-          .map((line) => {
-            const [name, color] = line.split("-");
-            if (name && color) {
-              return `![${name.trim()}](https://img.shields.io/badge/${encodeURIComponent(
-                name.trim()
-              )}-${color.trim()}?style=for-the-badge&logo=${encodeURIComponent(
-                name.trim().toLowerCase()
-              )}&logoColor=white)`;
-            }
-            return "";
-          })
-          .filter(Boolean)
-          .join(" ");
-        markdown = markdown.replace(`{{${key}}}`, badgeLines);
-      }
-      // Handle pinned repos second repo
-      else if (component.id === "projects-pinned" && key === "repo2") {
-        if (value) {
-          markdown = markdown.replace(
-            "{{repo2}}",
-            `[![Repo Card](https://github-readme-stats.vercel.app/api/pin/?username=${
-              section.values.username || globalValues.username
-            }&repo=${value}&theme=${section.values.theme})](https://github.com/${
-              section.values.username || globalValues.username
-            }/${value})`
-          );
-        } else {
-          markdown = markdown.replace("{{repo2}}", "");
-        }
-      } else {
-        markdown = markdown.replace(
-          new RegExp(`\\{\\{${key}\\}\\}`, "g"),
-          value
-        );
-      }
-    });
-
-    // Replace remaining global values
-    Object.entries(globalValues).forEach(([key, value]) => {
-      markdown = markdown.replace(
-        new RegExp(`\\{\\{${key}\\}\\}`, "g"),
-        value
-      );
-    });
-
-    return markdown;
-  };
 
   // Drag handlers
   const handleDragStart = (index: number) => {
@@ -209,8 +116,9 @@ export default function Preview({ sections, globalValues, onReorderSections, onD
   };
 
   const markdownComponents = {
-    img: ({ node, src, alt, ...props }: any) => {
-      if (typeof src === "string" && (src.startsWith("javascript:") || src.startsWith("data:text"))) {
+    img: ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & ExtraProps) => {
+      const srcLower = typeof src === "string" ? src.toLowerCase().trim() : "";
+      if (srcLower.startsWith("javascript:") || srcLower.startsWith("data:")) {
         return null;
       }
       return (
@@ -220,27 +128,26 @@ export default function Preview({ sections, globalValues, onReorderSections, onD
           {...props} 
           className="max-w-full h-auto inline-block"
           loading="lazy"
-          onError={(e: any) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = "none";
+          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+            e.currentTarget.style.display = "none";
           }}
         />
       );
     },
-    h1: ({ node, ...props }: any) => (
+    h1: ({ ...props }: React.HTMLAttributes<HTMLHeadingElement> & ExtraProps) => (
       <h1 {...props} className="text-2xl font-bold mt-6 mb-4 first:mt-0" />
     ),
-    h2: ({ node, ...props }: any) => (
+    h2: ({ ...props }: React.HTMLAttributes<HTMLHeadingElement> & ExtraProps) => (
       <h2 {...props} className="text-xl font-bold mt-5 mb-3" />
     ),
-    h3: ({ node, ...props }: any) => (
+    h3: ({ ...props }: React.HTMLAttributes<HTMLHeadingElement> & ExtraProps) => (
       <h3 {...props} className="text-lg font-semibold mt-4 mb-2" />
     ),
-    p: ({ node, ...props }: any) => (
+    p: ({ ...props }: React.HTMLAttributes<HTMLParagraphElement> & ExtraProps) => (
       <p {...props} className="my-3" />
     ),
-    a: ({ node, href, children, ...props }: any) => {
-      if (typeof href === "string" && href.startsWith("javascript:")) {
+    a: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & ExtraProps) => {
+      if (typeof href === "string" && href.toLowerCase().trim().startsWith("javascript:")) {
         return <span>{children}</span>;
       }
       return (
@@ -261,6 +168,23 @@ export default function Preview({ sections, globalValues, onReorderSections, onD
       <div className="flex-1 overflow-auto bg-white">
         <div className="p-3 sm:p-4 max-w-3xl mx-auto">
           <article className="prose prose-stone prose-sm max-w-none prose-headings:font-sans prose-a:text-blue-600 prose-img:my-2 prose-img:mx-auto">
+            {sections.length === 0 && (
+              <div className="text-center py-16">
+                {onOpenPicker ? (
+                  <button
+                    onClick={onOpenPicker}
+                    className="font-mono text-sm text-stone-400 hover:text-stone-600 transition-colors"
+                  >
+                    + Add a section to see a preview
+                  </button>
+                ) : (
+                  <p className="font-mono text-sm text-stone-400">
+                    Add a section to see a preview
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Initial drop zone */}
             {onReorderSections && sections.length > 0 && draggedIndex !== null && (
               <PreviewDropZone
@@ -272,8 +196,9 @@ export default function Preview({ sections, globalValues, onReorderSections, onD
             )}
             
             {sections.map((section, index) => {
-              const markdown = generateMarkdownForSection(section);
+              const markdown = generateMarkdownForSection(section, globalValues);
               const component = getComponentById(section.componentId);
+              const isSkipped = !isSectionIncludedForEditor(section.componentId, globalValues.targetEditor || "vscode");
               
               return (
                 <div key={section.id}>
@@ -282,7 +207,9 @@ export default function Preview({ sections, globalValues, onReorderSections, onD
                       draggable
                       onDragStart={() => handleDragStart(index)}
                       onDragEnd={handleDragEnd}
-                      className={`group relative cursor-grab active:cursor-grabbing rounded ${
+                      className={`group relative cursor-grab active:cursor-grabbing ${
+                        isSkipped ? "opacity-30" : ""
+                      } ${
                         draggedIndex === index
                           ? "opacity-50 scale-[0.98] border-2 border-dashed border-orange-400 bg-orange-50"
                           : "border-2 border-transparent hover:border-dashed hover:border-orange-300 hover:bg-orange-50/30"
@@ -290,9 +217,9 @@ export default function Preview({ sections, globalValues, onReorderSections, onD
                       style={{ margin: '-2px', padding: '6px' }}
                     >
                       {/* Section label - shows on hover */}
-                      <div className="absolute -top-5 left-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <span className="text-[10px] font-mono text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200">
-                          {component?.name || "Section"}
+                      <div className="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                        <span className="text-[10px] font-mono text-orange-500 bg-orange-50 px-1.5 py-0.5 border border-orange-200">
+                          {component?.name || "Section"}{isSkipped ? " · skipped" : ""}
                         </span>
                       </div>
                       
@@ -304,10 +231,11 @@ export default function Preview({ sections, globalValues, onReorderSections, onD
                             onDeleteSection(index);
                           }}
                           onMouseDown={(e) => e.stopPropagation()}
-                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-orange-100 hover:bg-red-100 border border-orange-300 hover:border-red-300 rounded text-orange-500 hover:text-red-500 z-10"
+                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-orange-100 hover:bg-red-100 border border-orange-300 hover:border-red-300 text-orange-500 hover:text-red-500 z-10"
+                          aria-label="Delete section"
                           title="Delete section"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 aria-hidden="true" className="w-3 h-3" />
                         </button>
                       )}
                       

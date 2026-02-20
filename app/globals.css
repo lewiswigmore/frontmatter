@@ -13,9 +13,20 @@ body {
   font-family: var(--font-mono), monospace;
 }
 
-/* Remove default focus rings, add subtle border on focus */
+/* Remove default focus rings, show on keyboard navigation only */
 *:focus {
   outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid #a8a29e;
+  outline-offset: 2px;
+}
+
+/* Selection styling — orange accent */
+::selection {
+  background-color: rgba(234, 88, 12, 0.15);
+  color: inherit;
 }
 
 /* Scrollbar styling for the paper aesthetic */
@@ -51,18 +62,15 @@ body {
 .prose pre {
   background-color: #f6f8fa;
   border: 1px solid #e1e4e8;
-  border-radius: 6px;
 }
 
 .prose code {
   background-color: rgba(175, 184, 193, 0.2);
   padding: 0.2em 0.4em;
-  border-radius: 6px;
   font-size: 85%;
 }
 
 .prose pre code {
   background-color: transparent;
   padding: 0;
-  border-radius: 0;
 }

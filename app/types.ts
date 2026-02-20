@@ -1,9 +1,9 @@
-// Component types for the README builder
+// Component types for the AI Agent & MCP Builder
 
 export interface ComponentField {
   name: string;
   label: string;
-  type: "text" | "textarea" | "select" | "color" | "boolean" | "badges-picker";
+  type: "text" | "textarea" | "select" | "color" | "boolean" | "key-value" | "json" | "list";
   default: string;
   options?: string[]; // For select type
   placeholder?: string;
@@ -12,10 +12,10 @@ export interface ComponentField {
 export interface ReadmeComponent {
   id: string;
   name: string;
-  category: "header" | "stats" | "tech" | "social" | "projects" | "extras";
+  category: "frontmatter" | "instructions" | "tools" | "examples" | "security" | "mcp" | "extras";
   description: string;
   fields: ComponentField[];
-  template: string; // Markdown template with {{variable}} placeholders
+  template: string; // Markdown/YAML/JSON template with {{variable}} placeholders
   preview?: string; // Optional preview image URL
 }
 
@@ -35,14 +35,15 @@ export interface Archetype {
   sections: Section[];
 }
 
+export type TargetEditor = "vscode" | "cursor" | "claude-code" | "windsurf" | "generic";
+
 export interface BuilderState {
   sections: Section[];
   globalValues: {
-    username: string;
-    name: string;
-    email?: string;
-    website?: string;
-    twitter?: string;
-    linkedin?: string;
+    agentName: string;
+    description: string;
+    version?: string;
+    author?: string;
+    targetEditor?: TargetEditor;
   };
 }
