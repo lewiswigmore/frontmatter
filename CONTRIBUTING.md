@@ -27,8 +27,10 @@ Thank you for your interest in contributing! This project welcomes contributions
 
 1. Create a new branch from `main`
 2. Make your changes
-3. Test your changes locally (`npm run build`)
-4. Submit a PR with a clear description
+3. Verify locally:
+   - `npm run build` — production build passes
+   - `npm run lint` — no lint errors
+4. Submit a PR — the [PR template](.github/PULL_REQUEST_TEMPLATE.md) will guide you
 
 ### Adding Components or Archetypes
 
@@ -43,8 +45,13 @@ New building blocks and agent archetypes are always welcome! Please:
 
 - Use TypeScript for all new code
 - Follow the existing Tailwind CSS patterns
+- Run `npm run lint` before submitting
 - Keep components small and focused
 - Ensure accessibility (keyboard nav, screen readers)
+
+## Dependencies
+
+Dependency updates are handled automatically by [Dependabot](.github/dependabot.yml) on a weekly schedule. You don't need to open PRs for version bumps.
 
 ## Security
 
@@ -54,7 +61,7 @@ This project takes security seriously. Please review our security controls:
 - All links must be validated (no `javascript:` URIs)
 - Dependencies are regularly audited
 
-If you find a security vulnerability, please report it privately via GitHub Security Advisories.
+If you find a security vulnerability, please report it privately via [GitHub Security Advisories](https://github.com/lewiswigmore/frontmatter/security/advisories/new).
 
 ## Questions?
 
